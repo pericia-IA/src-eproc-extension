@@ -1,0 +1,31 @@
+:root{
+  --ph-purple:#5B21B6;
+  --ph-purple-dark:#4C1D95;
+  --ph-lilac:#EDE9FE;
+  --ph-lilac-hover:#DDD6FE;
+}
+/* Level 1 — primary flow */
+#pp-analisar-btn,#pp-btn{
+  background:var(--ph-purple)!important;
+  color:#F5F3FF!important;
+  border:none!important;
+}
+#pp-analisar-btn:hover,#pp-btn:hover{background:var(--ph-purple-dark)!important;}
+/* Level 2 — AI helpers */
+.ph-lvl2{
+  background:var(--ph-lilac)!important;
+  color:var(--ph-purple)!important;
+  border:none!important;
+}
+.ph-lvl2:hover{background:var(--ph-lilac-hover)!important;}
+/* Detail-page status span kept in the primary-flow purple */
+#pp-analisar-status{color:var(--ph-purple)!important;}
+/* Spinner icon shown in status spans while a request is in flight */
+@keyframes ph-spin { to { transform: rotate(360deg); } }
+.ph-spinner{
+  width:14px;
+  height:14px;
+  vertical-align:middle;
+  margin-right:6px;
+  animation:ph-spin 1s linear infinite;
+}

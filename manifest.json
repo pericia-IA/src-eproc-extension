@@ -1,0 +1,48 @@
+{
+  "manifest_version": 3,
+  "name": "Perícia Hub",
+  "version": "1.0.0",
+  "description": "Preenche o formulário de Laudo Médico no e-proc com os dados processados pelo SaaS.",
+  "permissions": ["storage"],
+  "host_permissions": [
+    "https://api.periciahub.com/*",
+    "https://eproc1g.trf6.jus.br/*",
+    "https://eproc1g-down.trf6.jus.br/*"
+  ],
+  "background": { "service_worker": "preencher-worker.js" },
+  "content_scripts": [
+    {
+      "matches": ["https://periciahub.com/*", "https://www.periciahub.com/*"],
+      "js": ["saas-bridge.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://eproc1g.trf6.jus.br/*"],
+      "js": ["eproc-download.js", "pipeline.js", "preencher-analise.js", "qrcode.min.js", "anamneseBlocks.js", "eproc-fill.js"],
+      "css": ["ph-styles.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["icons/final_icon32.png"],
+      "matches": ["https://eproc1g.trf6.jus.br/*"]
+    }
+  ],
+  "icons": {
+    "16": "icons/final_icon16.png",
+    "32": "icons/final_icon32.png",
+    "48": "icons/final_icon48.png",
+    "128": "icons/final_icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Perícia Hub",
+    "default_icon": {
+      "16": "icons/final_icon16.png",
+      "32": "icons/final_icon32.png",
+      "48": "icons/final_icon48.png",
+      "128": "icons/final_icon128.png"
+    }
+  }
+}
