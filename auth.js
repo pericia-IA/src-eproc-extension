@@ -76,12 +76,15 @@
     }
     if (resp.status === 429) {
       let msg = 'Limite diário de uso de IA atingido. Tente novamente amanhã.'
+      let info = null
       try {
         const body = await resp.json()
         if (body && body.error) msg = body.error
+        info = body
       } catch (_e) {}
       const err = new Error(msg)
       err.phLimit = true
+      err.phLimitInfo = info // { error, limit, used, period } from the backend
       throw err
     }
     return resp
