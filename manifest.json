@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Perícia Hub",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Preenche o formulário de Laudo Médico no e-proc com os dados processados pelo SaaS.",
   "permissions": ["storage"],
   "host_permissions": [
@@ -12,13 +12,13 @@
   "background": { "service_worker": "preencher-worker.js" },
   "content_scripts": [
     {
-      "matches": ["https://periciahub.com/*", "https://www.periciahub.com/*"],
+      "matches": ["https://eproc.periciahub.com/*"],
       "js": ["saas-bridge.js"],
       "run_at": "document_idle"
     },
     {
       "matches": ["https://eproc1g.trf6.jus.br/*"],
-      "js": ["eproc-download.js", "pipeline.js", "preencher-analise.js", "qrcode.min.js", "anamneseBlocks.js", "eproc-fill.js"],
+      "js": ["auth.js", "eproc-download.js", "pipeline.js", "preencher-analise.js", "qrcode.min.js", "anamneseBlocks.js", "eproc-fill.js"],
       "css": ["ph-styles.css"],
       "run_at": "document_idle"
     }

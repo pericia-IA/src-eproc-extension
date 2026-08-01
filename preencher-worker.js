@@ -8,7 +8,7 @@
 // importScripts is PROVEN to boot in this MV3 worker (spike 2026-06-23). The earlier
 // "worker dying (message-channel-closed)" in commit b80f551 was the old onConnect *Port* idle-death,
 // NOT importScripts — this design uses onMessage + storage, so no open channel exists.
-importScripts('pipeline.js')
+importScripts('auth.js', 'pipeline.js') // auth.js first: pipeline.js calls self.PhAuth.authFetch
 console.log('[pre-preencher worker] booted')
 
 const PIPELINE_BUDGET_MS = 90_000   // segment + sequential Claude calls (after the blob is in hand)

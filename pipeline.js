@@ -56,7 +56,7 @@
   }
 
   async function getFixedFields() {
-    const resp = await fetch(`${BACKEND_ORIGIN}/api/admin/fixed-fields`)
+    const resp = await self.PhAuth.authFetch(`${BACKEND_ORIGIN}/api/admin/fixed-fields`)
     if (!resp.ok) throw new Error('fixed-fields ' + resp.status)
     return resp.json()
   }
@@ -132,7 +132,7 @@
     const fd = new FormData()
     for (const b of blobs) fd.append('pdf', b, 'completo.pdf')
     if (onProgress) onProgress({ phase: 'segmenting' })
-    const segResp = await fetch(`${BACKEND_ORIGIN}/api/segment-and-extract`, { method: 'POST', body: fd })
+    const segResp = await self.PhAuth.authFetch(`${BACKEND_ORIGIN}/api/segment-and-extract`, { method: 'POST', body: fd })
     if (!segResp.ok) throw new Error('segment-and-extract ' + segResp.status)
     const segments = (await segResp.json()).segments || []
     if (segments.length === 0) throw new Error('Nenhum documento reconhecido no PDF.')
@@ -143,7 +143,7 @@
     for (let i = 0; i < toProcess.length; i++) {
       const seg = toProcess[i]
       if (onProgress) onProgress({ phase: 'processing', i: i + 1, total: toProcess.length })
-      const r = await fetch(`${BACKEND_ORIGIN}/api/process-segment`, {
+      const r = await self.PhAuth.authFetch(`${BACKEND_ORIGIN}/api/process-segment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ segmentId: seg.segmentId, docTypeId: seg.docTypeId, text: seg.text }),

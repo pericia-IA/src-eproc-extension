@@ -1,66 +1,25 @@
 # Deploying Perícia Hub to the Chrome Web Store
 
 Step-by-step guide to publish `extension/` as a **public** Chrome Web Store extension.
-Prerequisite for Step A: the backend + frontend must be deployed to a public HTTPS domain (this hasn't happened yet — do it first, then come back here).
 
----
+## Production URLs (current, actual — verify against the live deploy before trusting this)
 
-## Step A — Point the extension at production
+- **Backend**: `https://api.periciahub.com`
+- **Frontend / login** (`src-frontend-eproc-extension/`): `https://eproc.periciahub.com` (and `https://eproc.periciahub.com/login`).
+  **Not** a bare `periciahub.com` or `www.periciahub.com` — that was a wrong assumption made once (2026-07-28) that silently broke the login handoff (saas-bridge.js never loaded on the real domain). If the frontend ever moves to a different domain, grep the whole `extension/` folder for the OLD value and update every hit — don't rely on this doc alone, since this exact mismatch is how the bug happened.
 
-The extension is currently hardwired to the dev backend (`http://localhost:3001`). Before packaging, swap in your production URLs. In the edits below:
+These are already baked into the code below (not left as `<PLACEHOLDER>` template strings), specifically:
+- `BACKEND_ORIGIN` const in `pipeline.js`, `eproc-fill.js`, `auth.js`
+- `manifest.json` → `host_permissions` (backend + the two e-proc1g entries)
+- `manifest.json` → first `content_scripts` entry's `matches` (saas-bridge, frontend origin)
+- `popup.js` → the "Entrar" button's `chrome.tabs.create` URL
 
-- `<PROD_BACKEND>` = your hosted backend origin, e.g. `https://api.periciahub.com.br`
-- `<PROD_FRONTEND>` = your hosted SaaS frontend origin, e.g. `https://app.periciahub.com.br`
+Both backend and frontend **must be HTTPS** — e-proc pages are HTTPS and Chrome blocks mixed-content requests to `http://`. If you ever need to point at a different environment, update all four locations above together.
 
-Both **must be HTTPS** — e-proc pages are HTTPS and Chrome blocks mixed-content requests to `http://`.
+## Step A — Version bump
 
-### A.1 — `pipeline.js` line 7
-
-```js
-// before
-const BACKEND_ORIGIN = 'http://localhost:3001'
-// after
-const BACKEND_ORIGIN = '<PROD_BACKEND>'
-```
-
-### A.2 — `eproc-fill.js` line 6
-
-Same change:
-
-```js
-const BACKEND_ORIGIN = '<PROD_BACKEND>'
-```
-
-### A.3 — `manifest.json` → `host_permissions`
-
-Replace the localhost entry; keep the two e-proc entries:
-
-```json
-"host_permissions": [
-  "<PROD_BACKEND>/*",
-  "https://eproc1g.trf6.jus.br/*",
-  "https://eproc1g-down.trf6.jus.br/*"
-],
-```
-
-### A.4 — `manifest.json` → first `content_scripts` entry (saas-bridge)
-
-Replace the two localhost matches with the production frontend:
-
-```json
-{
-  "matches": ["<PROD_FRONTEND>/*"],
-  "js": ["saas-bridge.js"],
-  "run_at": "document_idle"
-},
-```
-
-> **Do not keep the localhost matches in the public build.** A published extension that injects a script into every `localhost` page invites store rejection (and would run on other developers' local apps). For local development, keep using the unpacked copy from this repo with its localhost values.
-
-### A.5 — Version bump
-
-- `manifest.json` line 4: `"version": "1.0.0"`
-- `popup.html` line 15: `<div class="version">v1.0.0</div>` (keep in sync with the manifest)
+- `manifest.json` → `"version"` field
+- `popup.html` → the `<div class="version">` line (keep in sync with the manifest)
 
 ---
 
@@ -149,8 +108,8 @@ Dashboard → **+ New item** → upload `pericia-hub-1.0.0.zip`, then fill in ea
 | `storage` | Armazena temporariamente, no navegador do usuário, os dados do laudo gerados no site Perícia Hub para que a aba do e-proc possa preenchê-los no formulário. |
 | `https://eproc1g.trf6.jus.br/*` | Necessário para ler e preencher o formulário de Laudo Médico Pericial no e-proc TRF6, finalidade única da extensão. |
 | `https://eproc1g-down.trf6.jus.br/*` | Domínio de download de documentos do e-proc TRF6; necessário para baixar as peças do processo que alimentam o preenchimento do laudo. |
-| `<PROD_BACKEND>/*` | Servidor do Perícia Hub; recebe o texto do processo para processamento (IA) e devolve os campos do laudo. |
-| Content script em `<PROD_FRONTEND>` | Página do sistema Perícia Hub; o script recebe os resultados processados e os repassa à extensão. |
+| `https://api.periciahub.com/*` | Servidor do Perícia Hub; recebe o texto do processo para processamento (IA) e devolve os campos do laudo. |
+| Content script em `https://eproc.periciahub.com/*` | Página do sistema Perícia Hub; o script recebe os resultados processados e o login e os repassa à extensão. |
 
 ---
 

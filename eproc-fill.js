@@ -545,7 +545,7 @@
     const ctrl = new AbortController()
     const timeoutId = setTimeout(() => ctrl.abort(), 60_000)
     try {
-      const resp = await fetch(`${BACKEND_ORIGIN}/api/conclusao-justificativa`, {
+      const resp = await PhAuth.authFetch(`${BACKEND_ORIGIN}/api/conclusao-justificativa`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -574,9 +574,10 @@
       statusEl.textContent = 'Preenchido. Revise e clique em Salvar.'
     } catch (err) {
       statusEl.style.color = '#B91C1C'
-      statusEl.textContent = err.name === 'AbortError'
-        ? 'Tempo esgotado, tente novamente.'
-        : `Erro de conexão: ${err.message}`
+      statusEl.textContent = (err.phAuth || err.phLimit) ? err.message
+        : err.name === 'AbortError'
+          ? 'Tempo esgotado, tente novamente.'
+          : `Erro de conexão: ${err.message}`
     } finally {
       clearTimeout(timeoutId)
       disableEls.forEach((b) => { b.disabled = false })
@@ -637,7 +638,7 @@
       const ctrl = new AbortController()
       const timeoutId = setTimeout(() => ctrl.abort(), 60_000)
       try {
-        const resp = await fetch(`${BACKEND_ORIGIN}/api/refine-conclusao`, {
+        const resp = await PhAuth.authFetch(`${BACKEND_ORIGIN}/api/refine-conclusao`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ buttonId: spec.id, text }),
@@ -665,9 +666,10 @@
         status.textContent = 'Texto refinado. Revise.'
       } catch (err) {
         status.style.color = '#B91C1C'
-        status.textContent = err.name === 'AbortError'
-          ? 'Tempo esgotado, tente novamente.'
-          : `Erro de conexão: ${err.message}`
+        status.textContent = (err.phAuth || err.phLimit) ? err.message
+          : err.name === 'AbortError'
+            ? 'Tempo esgotado, tente novamente.'
+            : `Erro de conexão: ${err.message}`
       } finally {
         clearTimeout(timeoutId)
         refineBtn.disabled = false
@@ -776,7 +778,7 @@
       const ctrl = new AbortController()
       const timeoutId = setTimeout(() => ctrl.abort(), 90_000)
       try {
-        const resp = await fetch(`${BACKEND_ORIGIN}/api/answer-quesitos`, {
+        const resp = await PhAuth.authFetch(`${BACKEND_ORIGIN}/api/answer-quesitos`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ quesitos, context: collectQuesitosContext() }),
@@ -799,9 +801,10 @@
         ta.dispatchEvent(new Event('change', { bubbles: true }))
         showStatus(container, 'Respostas preenchidas. Revise e clique em Salvar.', false)
       } catch (err) {
-        const msg = err.name === 'AbortError'
-          ? 'Tempo esgotado, tente novamente.'
-          : `Erro de conexão: ${err.message}`
+        const msg = (err.phAuth || err.phLimit) ? err.message
+          : err.name === 'AbortError'
+            ? 'Tempo esgotado, tente novamente.'
+            : `Erro de conexão: ${err.message}`
         showStatus(container, msg, true)
         btn.disabled = false
       } finally {
@@ -843,7 +846,7 @@
       const ctrl = new AbortController()
       const timeoutId = setTimeout(() => ctrl.abort(), 60_000)
       try {
-        const resp = await fetch(`${BACKEND_ORIGIN}/api/describe`, {
+        const resp = await PhAuth.authFetch(`${BACKEND_ORIGIN}/api/describe`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ atividade }),
@@ -868,9 +871,10 @@
         showStatus(container, '', false)
         btn.disabled = false
       } catch (err) {
-        const msg = err.name === 'AbortError'
-          ? 'Tempo esgotado, tente novamente.'
-          : `Erro de conexão: ${err.message}`
+        const msg = (err.phAuth || err.phLimit) ? err.message
+          : err.name === 'AbortError'
+            ? 'Tempo esgotado, tente novamente.'
+            : `Erro de conexão: ${err.message}`
         showStatus(container, msg, true)
         btn.disabled = false
       } finally {
@@ -929,7 +933,7 @@
       try {
         const fd = new FormData()
         fd.append('file', file)
-        const resp = await fetch(`${BACKEND_ORIGIN}/api/transcribe-documentos`, {
+        const resp = await PhAuth.authFetch(`${BACKEND_ORIGIN}/api/transcribe-documentos`, {
           method: 'POST', body: fd, signal: ctrl.signal,
         })
         if (!resp.ok) {
@@ -951,9 +955,10 @@
         showStatus(container, 'Documento adicionado. Revise e clique em Salvar.', false)
         btn.disabled = false
       } catch (err) {
-        const msg = err.name === 'AbortError'
-          ? 'Tempo esgotado, tente novamente.'
-          : `Erro de conexão: ${err.message}`
+        const msg = (err.phAuth || err.phLimit) ? err.message
+          : err.name === 'AbortError'
+            ? 'Tempo esgotado, tente novamente.'
+            : `Erro de conexão: ${err.message}`
         showStatus(container, msg, true)
         btn.disabled = false
       } finally {
@@ -1077,7 +1082,7 @@
         return
       }
       try {
-        const r = await fetch(`${BACKEND_ORIGIN}/api/mobile-result/${encodeURIComponent(id)}`)
+        const r = await PhAuth.authFetch(`${BACKEND_ORIGIN}/api/mobile-result/${encodeURIComponent(id)}`)
         const data = await r.json()
         if (data.status === 'done' && data.filledText && data.filledText.trim()) {
           stopPolling()
@@ -1089,7 +1094,15 @@
           showStatus(container, 'Documento recebido do celular. Revise e clique em Salvar.', false)
           return
         }
-      } catch (_e) { /* transient; keep polling */ }
+      } catch (e) {
+        if (e.phAuth || e.phLimit) {
+          stopPolling()
+          qrBox.innerHTML = ''
+          showStatus(container, e.message, true)
+          return
+        }
+        /* transient; keep polling */
+      }
       pollTimer = setTimeout(() => poll(id), 2000)
     }
 
@@ -1105,9 +1118,12 @@
 
       let baseUrl = ''
       try {
-        const r = await fetch(`${BACKEND_ORIGIN}/api/mobile-base-url`)
+        const r = await PhAuth.authFetch(`${BACKEND_ORIGIN}/api/mobile-base-url`)
         baseUrl = (await r.json()).baseUrl || ''
-      } catch (_e) { /* handled below */ }
+      } catch (e) {
+        if (e.phAuth || e.phLimit) { showStatus(container, e.message, true); return }
+        /* otherwise handled below */
+      }
       if (!baseUrl) {
         showStatus(container, 'Configure MOBILE_BASE_URL no servidor primeiro.', true)
         return
@@ -1178,7 +1194,7 @@
       const ctrl = new AbortController()
       const timeoutId = setTimeout(() => ctrl.abort(), 60_000)
       try {
-        const resp = await fetch(`${BACKEND_ORIGIN}${endpoint}`, {
+        const resp = await PhAuth.authFetch(`${BACKEND_ORIGIN}${endpoint}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text }),
@@ -1208,9 +1224,10 @@
         showStatus(container, 'Texto refinado. Revise.', false)
         btn.disabled = false
       } catch (err) {
-        const msg = err.name === 'AbortError'
-          ? 'Tempo esgotado, tente novamente.'
-          : `Erro de conexão: ${err.message}`
+        const msg = (err.phAuth || err.phLimit) ? err.message
+          : err.name === 'AbortError'
+            ? 'Tempo esgotado, tente novamente.'
+            : `Erro de conexão: ${err.message}`
         showStatus(container, msg, true)
         btn.disabled = false
       } finally {
@@ -1282,7 +1299,7 @@
       const ctrl = new AbortController()
       const timeoutId = setTimeout(() => ctrl.abort(), 5 * 60 * 1000)
       try {
-        const resp = await fetch(`${BACKEND_ORIGIN}/api/transcribe-entrevista`, {
+        const resp = await PhAuth.authFetch(`${BACKEND_ORIGIN}/api/transcribe-entrevista`, {
           method: 'POST', body: form, signal: ctrl.signal,
         })
         if (!resp.ok) {
@@ -1303,7 +1320,8 @@
         btn.disabled = false
         showStatus(container, 'Transcrição adicionada. Revise.', false)
       } catch (err) {
-        const msg = err.name === 'AbortError' ? 'Tempo esgotado, tente novamente.' : `Erro de conexão: ${err.message}`
+        const msg = (err.phAuth || err.phLimit) ? err.message
+          : err.name === 'AbortError' ? 'Tempo esgotado, tente novamente.' : `Erro de conexão: ${err.message}`
         showStatus(container, msg, true); resetIdle()
       } finally {
         clearTimeout(timeoutId)
